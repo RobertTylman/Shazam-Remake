@@ -111,7 +111,12 @@ async def process_audio(file: UploadFile = File(...)):
         return JSONResponse(content={
             "image": f"data:image/png;base64,{img_b64}",
             "duration": float(max_plot_seconds),
-            "peaks": len(peaks)
+            "peaks": len(peaks),
+            "num_frames": int(spec.shape[1]),
+            "frame_size": int(frame_size),
+            "hop_size": int(step_size),
+            "lowest_hz": 0,
+            "highest_hz": float(sr / 2)
         })
         
     finally:

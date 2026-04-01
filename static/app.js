@@ -89,6 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Hydrate Tracking Telemetry
             document.getElementById('stat-duration').textContent = data.duration.toFixed(2) + 's';
             document.getElementById('stat-peaks').textContent = data.peaks.toLocaleString();
+            document.getElementById('stat-frames').textContent = data.num_frames.toLocaleString();
+            document.getElementById('stat-frame-size').textContent = data.frame_size.toLocaleString();
+            document.getElementById('stat-hop-size').textContent = data.hop_size.toLocaleString();
+            document.getElementById('stat-lowest-hz').textContent = data.lowest_hz + ' Hz';
+            document.getElementById('stat-highest-hz').textContent = data.highest_hz.toFixed(1) + ' Hz';
             
             // UI State: Complete
             loaderContainer.classList.add('hidden');

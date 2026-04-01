@@ -47,7 +47,7 @@ body {
 
 .container {
     width: 100%;
-    max-width: 800px;
+    max-width: 1200px;
     padding: 2rem;
     z-index: 1;
 }
@@ -184,50 +184,56 @@ h1 {
 }
 
 .stats-container {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 2.5rem;
+    width: 100%;
 }
 
 .stat-box {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    padding: 1.5rem 2.5rem;
+    padding: 1.25rem 1rem;
     text-align: center;
-    min-width: 200px;
     backdrop-filter: blur(8px);
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.stat-box:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
 }
 
 .stat-label {
     display: block;
     color: var(--text-secondary);
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
+    letter-spacing: 1.2px;
     margin-bottom: 0.5rem;
 }
 
 .stat-value {
     display: block;
-    font-size: 2.5rem;
+    font-size: 1.5rem;
     font-weight: 700;
     color: var(--shazam-blue);
 }
 
 .result-card {
-    padding: 1rem;
+    padding: 0;
+    overflow: hidden;
     width: 100%;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
 }
 
 .result-card img {
     width: 100%;
     height: auto;
-    border-radius: 12px;
     display: block;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .btn-reset {
