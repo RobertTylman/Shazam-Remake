@@ -159,44 +159,36 @@ if __name__ == "__main__":
     step_size = int(frame_size * 0.5) # 50% overlap
 
     # ----- Plotting -----
-    # To prevent visual crashes on 3+ minute songs, limit plotting data to first 5 seconds
-    max_plot_seconds = min(5.0, len(full_audio) / test_sr)
-    max_spec_frames = int(max_plot_seconds * sr / step_size)
+    # Render the full song natively
+    max_plot_seconds = len(full_audio) / test_sr
     
-    plot_spec = spec[:, :max_spec_frames]
-    
-    # Filter peaks that occur only within the first plotted 5 seconds
-    plot_peaks = [p for p in peaks if p[0] < max_spec_frames]
-    peak_times = [p[0] for p in plot_peaks]
-    peak_freqs = [p[1] for p in plot_peaks]
+    peak_times = [p[0] for p in peaks]
+    peak_freqs = [p[1] for p in peaks]
     
     time_bins_in_seconds = [idx * (step_size / sr) for idx in peak_times]
     freq_bins_in_hz = [idx * (sr / frame_size) for idx in peak_freqs]
 
-    spec_db = 10 * np.log10(plot_spec + 1e-10)
+    spec_db = 10 * np.log10(spec + 1e-10)
     
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), gridspec_kw={'height_ratios': [2, 1]})
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(16, 8), gridspec_kw={'height_ratios': [2, 1]})
     
     # Spectrogram Subplot (Top)
     im = ax1.imshow(spec_db, aspect='auto', origin='lower', cmap='viridis', 
                extent=[0, max_plot_seconds, 0, sr / 2])
     
-    if plot_peaks:
+    if peaks:
         ax1.scatter(time_bins_in_seconds, freq_bins_in_hz, color='red', marker='x', alpha=0.9, label='Extracted Peaks')
         ax1.legend(loc="upper right")
         
-    ax1.set_title(f"Constellation Map over Spectrogram (First {max_plot_seconds:.1f}s)")
+    ax1.set_title(f"Constellation Map over Spectrogram (Full Track: {max_plot_seconds:.1f}s)")
     ax1.set_ylabel("Frequency (Hz)")
     fig.colorbar(im, ax=ax1, format='%+2.0f dB')
     
     # Original Waveform Subplot (Bottom)
-    max_audio_samples = int(max_plot_seconds * test_sr)
-    ax2.plot(t[:max_audio_samples], full_audio[:max_audio_samples], color='blue', alpha=0.8)
-    ax2.set_title(f"Original Time Domain Signal (First {max_plot_seconds:.1f}s)")
+    ax2.plot(t, full_audio, color='blue', alpha=0.8)
+    ax2.set_title(f"Original Time Domain Signal (Full Track: {max_plot_seconds:.1f}s)")
     ax2.set_xlabel("Time (s)")
     ax2.set_ylabel("Amplitude")
-    # For very clear visibility of actual waves on music, maybe limit to an even shorter slice like 0.1s
-    # but here we'll just plot the whole 5s.
     ax2.set_xlim([0, max_plot_seconds])
     
     plt.tight_layout()

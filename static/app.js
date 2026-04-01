@@ -80,12 +80,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`Server returned status: ${response.status}`);
             }
 
-            // The backend returns the raw image bytes
-            const blob = await response.blob();
-            const imageUrl = URL.createObjectURL(blob);
+            // Parse API response
+            const data = await response.json();
 
             // Display Results
-            resultImage.src = imageUrl;
+            resultImage.src = data.image;
+            
+            // Hydrate Tracking Telemetry
+            document.getElementById('stat-duration').textContent = data.duration.toFixed(2) + 's';
+            document.getElementById('stat-peaks').textContent = data.peaks.toLocaleString();
             
             // UI State: Complete
             loaderContainer.classList.add('hidden');
