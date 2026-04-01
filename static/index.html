@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shazam Algorithm Core</title>
+    <!-- Google Fonts for premium typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    
+    <!-- Dynamic background gradients -->
+    <div class="bg-gradient"></div>
+
+    <main class="container">
+        <header>
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#paint0_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    <defs>
+                        <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#2D9CDB" />
+                            <stop offset="1" stop-color="#56CCF2" />
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>Acoustic Fingerprinting</h1>
+            </div>
+            <p class="subtitle">Upload an audio file to generate its Constellation Map and Spectral Hash.</p>
+        </header>
+
+        <section class="upload-section">
+            <div class="drop-zone" id="drop-zone">
+                <div class="drop-zone-content">
+                    <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l-2.293 2.293a1 1 0 11-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 6v13a1 1 0 11-2 0z"></path>
+                    </svg>
+                    <span class="drop-text">Drag & Drop an audio file here</span>
+                    <span class="drop-subtext">or click to browse (.wav, .m4a, .mp3)</span>
+                    <input type="file" id="file-input" accept="audio/*" hidden>
+                </div>
+            </div>
+            
+            <div class="loader-container hidden" id="loader-container">
+                <div class="pulse-ring"></div>
+                <div class="pulse-ring delay-1"></div>
+                <div class="pulse-ring delay-2"></div>
+                <h2>Processing Algorithm...</h2>
+                <p>Generating spectrogram & extracting constellation peaks</p>
+            </div>
+        </section>
+
+        <section class="results-section hidden" id="results-section">
+            <h2>Constellation Map Matrix</h2>
+            <div class="glass-card result-card">
+                <img id="result-image" src="" alt="Spectrogram Constellation Map">
+            </div>
+            <button class="btn-reset" id="reset-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                Process Another Track
+            </button>
+        </section>
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
