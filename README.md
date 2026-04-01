@@ -55,3 +55,26 @@ The core of the algorithm is based on creating robust identifiers for audio clip
 - **Acoustic Fingerprinting:** Fast and scalable audio hashing mechanisms.
 - **Noise Robustness:** Designed to identify tracks even with significant ambient background noise.
 - **Fast Lookups:** Efficient multi-hash matching utilizing offset-based time alignment heuristics.
+
+## Usage
+
+You can test the core audioprocessing pipeline and the peak constellation generator via the command line. The script will ingest an audio file, generate a targeted spectrogram, extract the constellation peaks, and save a combined visual plot to `/tmp/spectrogram_test.png`.
+
+1. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Run against an audio file:**
+   ```bash
+   # Make sure to include a space between the script and your file path!
+   export PYTHONPATH=$PYTHONPATH:.
+   python3 src/audioprocessing.py "/path/to/your/audio_file.wav"
+   ```
+   *Note: The script natively accepts `.wav` files. If you provide an `.m4a` file or other format, the script will automatically use `ffmpeg` computationally to bridge ingestion.*
+
+3. **Run the built-in dummy test:**
+   If no arguments are provided, the script generates its own dummy file simulating a 400Hz and 800Hz sine sweep to verify standalone functionality:
+   ```bash
+   python3 src/audioprocessing.py
+   ```

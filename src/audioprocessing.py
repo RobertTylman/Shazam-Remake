@@ -2,11 +2,31 @@ import math
 import numpy as np
 import scipy.io.wavfile as wav
 import scipy.signal as signal
-import matplotlib.pyplot as plt
+import os
+import subprocess
+import tempfile
+import sys
 
 def load_audio(filepath: str):
-    """Load a wav file and return sample rate and audio data."""
-    sample_rate, data = wav.read(filepath)
+    """Load an audio file and return sample rate and audio data."""
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"\nERROR: Could not find the file '{filepath}'. Please check for typos and ensure the file exists at the given path.")
+        
+    if not filepath.lower().endswith('.wav'):
+        # Create a temporary wav file
+        fd, temp_wav = tempfile.mkstemp(suffix='.wav')
+        os.close(fd)
+        
+        try:
+            # Use ffmpeg to convert to wav
+            subprocess.run(['ffmpeg', '-y', '-i', filepath, temp_wav], 
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            sample_rate, data = wav.read(temp_wav)
+        finally:
+            os.remove(temp_wav)
+    else:
+        sample_rate, data = wav.read(filepath)
+        
     # Convert to float32 for safer math operations
     data = data.astype(np.float32)
     return sample_rate, data
@@ -84,7 +104,7 @@ def generate_spectrogram(audio_data: np.ndarray, sample_rate: int, frame_size: i
     # Transpose so time is x-axis (columns) and frequency is y-axis (rows)
     return np.array(spectrogram).T
 
-def process_audio_pipeline(filepath: str, frame_size: int = 4096, target_sr: int = 11025) -> tuple:
+def process_audio_pipeline(filepath: str, frame_size: int = 1024, target_sr: int = 11025) -> tuple:
     """Run the entire audio processing pipeline from raw wav to spectrogram."""
     sample_rate, audio_data = load_audio(filepath)
     audio_mono = convert_to_mono(audio_data)
@@ -96,20 +116,92 @@ def process_audio_pipeline(filepath: str, frame_size: int = 4096, target_sr: int
     return spectrogram, target_sr
 
 if __name__ == "__main__":
-    # Test block to generate a sample dummy audio and test the pipeline
-    test_sr = 44100
-    t = np.linspace(0, 2, 2 * test_sr, endpoint=False) # 2 seconds
-    # Generate a dummy chord: 400Hz + 800Hz
-    test_audio = np.sin(2 * np.pi * 400 * t) + 0.5 * np.sin(2 * np.pi * 800 * t)
+    import matplotlib.pyplot as plt
+    try:
+        from src.fingerprinting import extract_peaks
+    except ImportError:
+        from fingerprinting import extract_peaks
     
-    # Write a temporary 16-bit PCM WAV to disk to test ingestion
-    test_wav = "/tmp/test_shazam_audio.wav"
-    wav.write(test_wav, test_sr, (test_audio * 32767).astype(np.int16))
-    print(f"Created dummy audio chunk at {test_wav}")
+    if len(sys.argv) > 1:
+        test_wav = sys.argv[1]
+        print(f"Loading provided audio: {test_wav}")
+        test_sr, full_audio = load_audio(test_wav)
+        
+        # If stereo, convert to mono right away for plotting the waveform
+        if len(full_audio.shape) > 1 and full_audio.shape[1] > 1:
+            full_audio = np.mean(full_audio, axis=1)
+            
+        t = np.linspace(0, len(full_audio) / test_sr, len(full_audio), endpoint=False)
+    else:
+        # Test block to generate a sample dummy audio and test the pipeline
+        test_sr = 44100
+        t = np.linspace(0, 2, 2 * test_sr, endpoint=False) # 2 seconds
+        # Generate a dummy chord: 400Hz + 800Hz
+        full_audio = np.sin(2 * np.pi * 400 * t) + 0.5 * np.sin(2 * np.pi * 800 * t)
+        
+        # Write a temporary 16-bit PCM WAV to disk to test ingestion
+        test_wav = "/tmp/test_shazam_audio.wav"
+        wav.write(test_wav, test_sr, (full_audio * 32767).astype(np.int16))
+        print(f"Created dummy audio chunk at {test_wav}")
     
     # Run the pipeline
-    spec, sr = process_audio_pipeline(test_wav)
+    frame_size = 1024 
+    spec, sr = process_audio_pipeline(test_wav, frame_size=frame_size)
     print(f"Pipeline executed successfully.")
     print(f"Spectrogram shape: {spec.shape} (Freq Bins x Time Frames)")
-    print(f"At {sr}Hz with 4096 framing, frequency resolution is ~{sr/4096:.2f}Hz per bin.")
+    print(f"At {sr}Hz with {frame_size} framing, frequency resolution is ~{sr/frame_size:.2f}Hz per bin.")
+    
+    # Extract peaks
+    # The default coefficient is 1.0. We collect all standalone points above the global mean.
+    peaks = extract_peaks(spec, coefficient=1.0)
+    print(f"Extracted {len(peaks)} constellation peaks from the entire spectrogram.")
+    
+    step_size = int(frame_size * 0.5) # 50% overlap
+
+    # ----- Plotting -----
+    # To prevent visual crashes on 3+ minute songs, limit plotting data to first 5 seconds
+    max_plot_seconds = min(5.0, len(full_audio) / test_sr)
+    max_spec_frames = int(max_plot_seconds * sr / step_size)
+    
+    plot_spec = spec[:, :max_spec_frames]
+    
+    # Filter peaks that occur only within the first plotted 5 seconds
+    plot_peaks = [p for p in peaks if p[0] < max_spec_frames]
+    peak_times = [p[0] for p in plot_peaks]
+    peak_freqs = [p[1] for p in plot_peaks]
+    
+    time_bins_in_seconds = [idx * (step_size / sr) for idx in peak_times]
+    freq_bins_in_hz = [idx * (sr / frame_size) for idx in peak_freqs]
+
+    spec_db = 10 * np.log10(plot_spec + 1e-10)
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), gridspec_kw={'height_ratios': [2, 1]})
+    
+    # Spectrogram Subplot (Top)
+    im = ax1.imshow(spec_db, aspect='auto', origin='lower', cmap='viridis', 
+               extent=[0, max_plot_seconds, 0, sr / 2])
+    
+    if plot_peaks:
+        ax1.scatter(time_bins_in_seconds, freq_bins_in_hz, color='red', marker='x', alpha=0.9, label='Extracted Peaks')
+        ax1.legend(loc="upper right")
+        
+    ax1.set_title(f"Constellation Map over Spectrogram (First {max_plot_seconds:.1f}s)")
+    ax1.set_ylabel("Frequency (Hz)")
+    fig.colorbar(im, ax=ax1, format='%+2.0f dB')
+    
+    # Original Waveform Subplot (Bottom)
+    max_audio_samples = int(max_plot_seconds * test_sr)
+    ax2.plot(t[:max_audio_samples], full_audio[:max_audio_samples], color='blue', alpha=0.8)
+    ax2.set_title(f"Original Time Domain Signal (First {max_plot_seconds:.1f}s)")
+    ax2.set_xlabel("Time (s)")
+    ax2.set_ylabel("Amplitude")
+    # For very clear visibility of actual waves on music, maybe limit to an even shorter slice like 0.1s
+    # but here we'll just plot the whole 5s.
+    ax2.set_xlim([0, max_plot_seconds])
+    
+    plt.tight_layout()
+    
+    output_img = "/tmp/spectrogram_test.png"
+    plt.savefig(output_img)
+    print(f"Saved spectrogram plot with constellation map to {output_img}")
 
