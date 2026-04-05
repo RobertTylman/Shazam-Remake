@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsSection = document.getElementById('results-section');
     const resultImage = document.getElementById('result-image');
     const interactiveSpectrogram = document.getElementById('interactive-spectrogram');
+    const spectrogramWrap = document.getElementById('spectrogram-wrap');
     const hashList = document.getElementById('hash-list');
     const selectedHashDetails = document.getElementById('selected-hash-details');
     const hashLine = document.getElementById('hash-line');
@@ -32,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const libStatSongs = document.getElementById('lib-stat-songs');
     const libStatHashes = document.getElementById('lib-stat-hashes');
     const libStatSize = document.getElementById('lib-stat-size');
+    const fullscreenModal = document.getElementById('fullscreen-modal');
+    const modalImg = document.getElementById('modal-img');
+    const modalClose = document.getElementById('modal-close');
 
     let libraryData = [];
     let lastHashes = [];
@@ -72,6 +76,60 @@ document.addEventListener('DOMContentLoaded', () => {
     function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         themeToggle.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
+    }
+
+    function getFullscreenElement() {
+        return document.fullscreenElement || document.webkitFullscreenElement || null;
+    }
+
+    function requestFullscreen(el) {
+        if (el.requestFullscreen) return el.requestFullscreen();
+        if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+        return Promise.resolve();
+    }
+
+    function exitFullscreen() {
+        if (document.exitFullscreen) return document.exitFullscreen();
+        if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+        return Promise.resolve();
+    }
+
+    function updateFullscreenState() {
+        const isFullscreen = getFullscreenElement() === spectrogramWrap;
+        spectrogramWrap.classList.toggle('is-fullscreen', isFullscreen);
+        refreshSpectrogramLayout();
+    }
+
+    async function toggleSpectrogramFullscreen() {
+        if (!interactiveSpectrogram.src) return;
+        const isFullscreen = getFullscreenElement() === spectrogramWrap;
+        try {
+            if (isFullscreen) {
+                await exitFullscreen();
+            } else {
+                await requestFullscreen(spectrogramWrap);
+            }
+        } catch (error) {
+            console.error('Fullscreen toggle failed:', error);
+        } finally {
+            updateFullscreenState();
+        }
+    }
+
+    async function toggleResultImageFullscreen() {
+        if (!resultImage.src) return;
+        const isFullscreen = getFullscreenElement() === resultImage;
+        try {
+            if (isFullscreen) {
+                await exitFullscreen();
+            } else {
+                await requestFullscreen(resultImage);
+            }
+        } catch (error) {
+            console.error('Result image fullscreen toggle failed:', error);
+        } finally {
+            updateFullscreenState();
+        }
     }
 
     // Highlight drop zone
@@ -387,8 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render axes once the spectrogram image has loaded
             interactiveSpectrogram.onload = () => {
-                renderFreqAxis();
-                renderTimeAxis();
+                refreshSpectrogramLayout();
             };
             interactiveSpectrogram.src = data.spectrogram_image;
 
@@ -563,6 +620,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return (1 - (freqBin / (numFreqBins - 1))) * height;
     }
 
+    function refreshSpectrogramLayout() {
+        if (!interactiveSpectrogram.src) return;
+        syncOverlaySize();
+        renderFreqAxis();
+        renderTimeAxis();
+
+        if (selectedHashId !== null && lastHashes.length) {
+            const selected = lastHashes.find(row => row.id === selectedHashId);
+            if (selected) {
+                drawHashOverlay(selected, trackMeta.numFrames || 1, trackMeta.numFreqBins || 1);
+            }
+        }
+    }
+
     function renderFreqAxis() {
         const container = document.getElementById('freq-axis');
         container.innerHTML = '';
@@ -589,7 +660,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const imgW = interactiveSpectrogram.clientWidth;
         container.style.width = imgW + 'px';
         const dur = trackMeta.duration || 1;
-        const numTicks = Math.min(20, Math.floor(dur));
+        const numTicks = Math.max(1, Math.min(20, Math.floor(dur)));
         const step = dur / numTicks;
         for (let i = 0; i <= numTicks; i++) {
             const t = i * step;
@@ -602,12 +673,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    resultImage.classList.add('can-fullscreen');
+    resultImage.addEventListener('click', () => {
+        toggleResultImageFullscreen();
+    });
+
+    spectrogramWrap.classList.add('can-fullscreen');
+    interactiveSpectrogram.addEventListener('click', () => {
+        toggleSpectrogramFullscreen();
+    });
+    document.addEventListener('fullscreenchange', updateFullscreenState);
+    document.addEventListener('webkitfullscreenchange', updateFullscreenState);
+
     // Re-sync overlay when window resizes
     window.addEventListener('resize', () => {
-        if (selectedHashId !== null && lastHashes.length) {
-            const h = lastHashes.find(r => r.id === selectedHashId);
-            if (h) syncOverlaySize();
-        }
+        refreshSpectrogramLayout();
     });
 
     // Reset workflow
@@ -622,6 +702,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function resetAnalyze() {
+        if (getFullscreenElement()) {
+            exitFullscreen();
+        }
         resultImage.src = '';
         interactiveSpectrogram.src = '';
         fileInput.value = '';
@@ -739,8 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderHashList(lastHashes, data.num_frames, data.num_freq_bins);
 
             interactiveSpectrogram.onload = () => {
-                renderFreqAxis();
-                renderTimeAxis();
+                refreshSpectrogramLayout();
             };
             interactiveSpectrogram.src = data.spectrogram_image;
 
@@ -764,5 +846,33 @@ document.addEventListener('DOMContentLoaded', () => {
             s.path.toLowerCase().includes(term)
         );
         renderLibrary(filtered);
+    // --- Fullscreen Modal Logic ---
+    resultImage.addEventListener('click', () => {
+        if (resultImage.src && resultImage.src !== window.location.href) {
+            modalImg.src = resultImage.src;
+            fullscreenModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+    });
+
+    const closeModal = () => {
+        fullscreenModal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    };
+
+    modalClose.addEventListener('click', closeModal);
+    
+    // Close on background click
+    fullscreenModal.addEventListener('click', (e) => {
+        if (e.target === fullscreenModal || e.target.classList.contains('modal-zoom-container')) {
+            closeModal();
+        }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !fullscreenModal.classList.contains('hidden')) {
+            closeModal();
+        }
     });
 });

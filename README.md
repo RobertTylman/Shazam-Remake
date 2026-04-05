@@ -50,47 +50,49 @@ The core of the algorithm is based on creating robust identifiers for audio clip
    * *Mid* `[40-80]`
    * *Mid-High* `[80-160]`
    * *High* `[160-511]`
-   
-   The algorithm hunts across every timeframe, finding the single loudest peak frequency exclusively within each of these 6 segregated sub-bands. A global mean threshold filters against background fuzz by averaging these localized acoustic power events across the entire track. Finally, any data points breaching this threshold survive as confirmed targets, reducing millions of data points into a hyper-sparse, robust coordinate map known as a "Constellation Map".
+      The algorithm hunts across every timeframe, finding the single loudest peak frequency exclusively within each of these 6 segregated sub-bands. A global mean threshold filters against background fuzz by averaging these localized acoustic power events across the entire track. Finally, any data points breaching this threshold survive as confirmed targets, reducing millions of data points into a hyper-sparse, robust coordinate map known as a "Constellation Map".
+
+![Fingerprint Peaks](file:///Users/robbietylman/GitHub/Shazam/peaks.png)
+*Visualizing the high-intensity peaks (dots) across the frequency spectrum over time.*
 
 3. **Target Zones & Hashing:**
    These scattered constellation peaks are grouped into localized structural pairings (target zones) mapping time displacements between robust fundamentals to create highly unique collision-resistant integer hashes that fundamentally define the structural identity of the audio independent of ambient room distortions.
+
 4. **Database Generation (Infrastructure):**
-   A massive catalog of original music is processed by the fingerprinting algorithm. The result is stored in a highly optimized fingerprint database containing millions of hashes mapped to their associated songs and relative timestamps.
+   A massive catalog of original music is processed by the fingerprinting algorithm. The result is stored in a highly optimized SQLite database containing millions of hashes mapped to their associated songs and relative timestamps (using B-Tree indexing for O(log N) lookup).
 
 5. **User Query (Application):**
-   When a user wants to identify a song, the application records a short audio sample. This sample undergoes the exact same fingerprinting algorithm natively on the device to produce a set of query hashes.
+   When a user wants to identify a song, the application records a 10-second audio sample via the browser's `MediaRecorder` API or processes an uploaded file. This sample undergoes the exact same fingerprinting algorithm to produce a set of query hashes.
 
-6. **Matching & Retrieval:**
-   These query hashes are sent to the frontal APIs, which look them up in the fingerprint database. The server checks for hash matches, and crucially, verifies the **temporal alignment** of the matches (ensuring the sequence of hashes occurs in the same chronological order as the original track). If a significant number of matches align on a consistent timeline, the song is successfully identified.
+6. **Matching & Retrieval (Time Coherence Scoring):**
+   These query hashes are sent to the backend, which looks them up in the fingerprint database. The engine performs **Time Coherence Scoring**: it calculates the time-offset between every matched hash in the snippet vs the original track. By finding the most frequent offset (the "mode"), the algorithm can identify the song even if the sample starts halfway through, with high certainty despite background noise.
 
 ## Features
 - **Acoustic Fingerprinting:** Fast and scalable audio hashing mechanisms.
-- **Noise Robustness:** Designed to identify tracks even with significant ambient background noise.
-- **Fast Lookups:** Efficient multi-hash matching utilizing offset-based time alignment heuristics.
+- **Audio Identification:** Real-time matching using time-coherence scoring across millions of fingerprints.
+- **Microphone Support:** Shazam-style "Listen" mode with real-time volume visualization.
+- **Large Dataset Support:** Optimized SQLite storage designed to handle massive libraries with high-speed B-Tree indexing.
+- **Visual Diagnostics:** Full spectrograms and constellation peak overlays for every analyzed track.
+- **Library Browser:** Browse your entire indexed collection and view real-time database statistics.
 
 ## Usage
-There are two ways to run the project: web app (localhost) or command line.
-
 ### 1) Install dependencies
-
 ```bash
 python3 -m pip install -r requirements.txt
 ```
 
-### 2) Run the web app on localhost
-
+### 2) Run the web app
 ```bash
 python3 app.py
 ```
 
 Open: `http://127.0.0.1:8000`
 
-The web UI lets you upload an audio file and returns:
-- Full-track spectrogram
-- Constellation peak map
-- Waveform view
-- Summary stats (duration, peak count, frame/hop size)
+### 3) Navigation Modes
+The web UI provides three distinct modes:
+*   **Analyze (Default):** Upload full-length tracks to generate and visualize fingerprints.
+*   **Identify:** Identify a song by recording a 10-second snippet (Microphone) or uploading a short audio file.
+*   **Library:** Browse your indexed collection, search by track name, and view database stats (Total Songs, Hashes, and DB size).
 
 ### 3) Run the CLI pipeline directly (optional)
 
