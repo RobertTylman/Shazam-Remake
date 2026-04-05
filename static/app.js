@@ -846,6 +846,8 @@ document.addEventListener('DOMContentLoaded', () => {
             s.path.toLowerCase().includes(term)
         );
         renderLibrary(filtered);
+    });
+
     // --- Fullscreen Modal Logic ---
     resultImage.addEventListener('click', () => {
         if (resultImage.src && resultImage.src !== window.location.href) {
