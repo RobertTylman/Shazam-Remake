@@ -52,7 +52,7 @@ The core of the algorithm is based on creating robust identifiers for audio clip
    * *High* `[160-511]`
       The algorithm hunts across every timeframe, finding the single loudest peak frequency exclusively within each of these 6 segregated sub-bands. A global mean threshold filters against background fuzz by averaging these localized acoustic power events across the entire track. Finally, any data points breaching this threshold survive as confirmed targets, reducing millions of data points into a hyper-sparse, robust coordinate map known as a "Constellation Map".
 
-![Fingerprint Peaks](file:///Users/robbietylman/GitHub/Shazam/peaks.png)
+![Fingerprint Peaks](./peaks.png)
 *Visualizing the high-intensity peaks (dots) across the frequency spectrum over time.*
 
 3. **Target Zones & Hashing:**
