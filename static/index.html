@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shazam Algorithm Core</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=4.0">
+    <link rel="stylesheet" href="/static/style.css?v=13.0">
 </head>
 <body>
     
@@ -17,22 +17,126 @@
             <div class="logo">
                 <h1>Acoustic Fingerprinting</h1>
             </div>
-            <p class="subtitle">Upload an audio file to generate its Constellation Map and Spectral Hash.</p>
+            <p class="subtitle">Extract spectral peaks or identify audio against the library.</p>
         </header>
 
-        <section class="upload-section">
+        <nav class="mode-selector">
+            <button class="mode-btn active" id="mode-analyze">Analyze Track</button>
+            <button class="mode-btn" id="mode-identify">Identify Library</button>
+            <button class="mode-btn" id="mode-library">Browse Library</button>
+        </nav>
+
+        <section class="upload-section" id="analyze-section">
             <div class="drop-zone" id="drop-zone">
                 <div class="drop-zone-content">
                     <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19V6l-2.293 2.293a1 1 0 11-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 6v13a1 1 0 11-2 0z"></path>
                     </svg>
-                    <span class="drop-text">Drag & Drop an audio file here</span>
-                    <span class="drop-subtext">or click to browse (.wav, .m4a, .mp3)</span>
+                    <span class="drop-text">Drag & Drop track to analyze</span>
+                    <span class="drop-subtext">Visualizes constellation maps and FFT peaks</span>
                     <input type="file" id="file-input" accept="audio/*" hidden>
                 </div>
             </div>
+        </section>
+
+        <section class="identify-section hidden" id="identify-section">
+            <div class="identify-container">
+                <div class="shazam-ring" id="record-btn">
+                    <div class="pulse-ring-static" id="pulse-ring"></div>
+                    <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                        <line x1="12" y1="19" x2="12" y2="23"></line>
+                        <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                </div>
+                <div class="identify-label" id="record-status">Tap to Identify</div>
+                <div class="identify-sublabel">Hold to listen for 10 seconds</div>
+            </div>
+
+            <div class="identify-results hidden" id="identify-results">
+                <div class="match-found">
+                    <span class="match-label">Match Found</span>
+                    <h2 class="match-title" id="match-song-name">--</h2>
+                    <div class="match-stats">
+                        <div class="match-stat" title="Time-coherent hash matches: fingerprints where the time offset difference aligns consistently, proving the audio plays at the same position in the song.">
+                            <span class="stat-label">Score</span>
+                            <span class="stat-value" id="match-score">--</span>
+                        </div>
+                        <div class="match-stat" title="Match density: percentage of query fingerprints that are time-coherent with the best match. Higher = cleaner recording. Formula: (score / query_fingerprints) * 100">
+                            <span class="stat-label">Density</span>
+                            <span class="stat-value" id="match-confidence">--</span>
+                        </div>
+                        <div class="match-stat" title="Dominance ratio: best score divided by the second-best score. Values above 2.0 indicate a strong, unambiguous match. Higher = more certain.">
+                            <span class="stat-label">Dominance</span>
+                            <span class="stat-value" id="match-dominance">--</span>
+                        </div>
+                        <div class="match-stat" title="Estimated position in the original track where the recording starts. Calculated from the most common time offset difference between DB and query fingerprints.">
+                            <span class="stat-label">Offset</span>
+                            <span class="stat-value" id="match-offset">--</span>
+                        </div>
+                        <div class="match-stat" title="Total fingerprints generated from the recorded audio snippet. Each anchor peak is paired with up to 5 nearby target peaks to produce hash values.">
+                            <span class="stat-label">Query FPs</span>
+                            <span class="stat-value" id="match-query-fps">--</span>
+                        </div>
+                        <div class="match-stat" title="Total database hash hits across all songs. The query hashes are looked up in the fingerprint database; this is how many rows matched before time-coherence filtering.">
+                            <span class="stat-label">DB Hits</span>
+                            <span class="stat-value" id="match-db-hits">--</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-reset" id="reset-id-btn">Try Another</button>
+            </div>
             
-            <div class="loader-container hidden" id="loader-container">
+            <div class="no-match hidden" id="no-match-view">
+                <h2 class="match-title">No Match Found</h2>
+                <p>Ensure the audio is clear and present in the DJ SET library.</p>
+                <button class="btn-reset" id="reset-no-match-btn">Try Again</button>
+            </div>
+        </section>
+
+        <!-- Library Section -->
+        <section class="library-section hidden" id="library-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value" id="lib-stat-songs">-</span>
+                    <span class="stat-label">Total Songs</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="lib-stat-hashes">-</span>
+                    <span class="stat-label">Total Fingerprints</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value" id="lib-stat-size">-</span>
+                    <span class="stat-label">Database Size</span>
+                </div>
+            </div>
+
+            <div class="library-header-row">
+                <h3>Indexed Tracks</h3>
+                <div class="search-wrap">
+                    <input type="text" id="library-search" placeholder="Search songs...">
+                </div>
+            </div>
+
+            <div class="library-table-wrapper">
+                <table class="library-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Song Name</th>
+                            <th style="width: 100px;">Duration</th>
+                            <th style="width: 120px;">Fingerprints</th>
+                        </tr>
+                    </thead>
+                    <tbody id="library-tbody">
+                        <!-- Rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="loader-container hidden" id="loader-container">
                 <div class="pulse-ring"></div>
                 <div class="pulse-ring delay-1"></div>
                 <div class="pulse-ring delay-2"></div>
@@ -117,6 +221,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=4.0"></script>
+    <script src="/static/app.js?v=13.0"></script>
 </body>
 </html>

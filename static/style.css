@@ -130,6 +130,199 @@ h1 {
     color: var(--fg-dim);
 }
 
+/* Mode Selector */
+.mode-selector {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+}
+
+.mode-btn {
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.5rem 0;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.15s ease;
+}
+
+.mode-btn:hover {
+    color: var(--fg);
+}
+
+.mode-btn.active {
+    color: var(--accent);
+}
+
+.mode-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1rem;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: var(--accent);
+}
+
+/* Identify Section */
+.identify-section {
+    padding: 2rem 0;
+}
+
+.identify-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.shazam-ring {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+    will-change: transform, box-shadow;
+}
+
+.shazam-ring:hover {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.shazam-ring.recording {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.pulse-ring-static {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.shazam-ring.recording .pulse-ring-static {
+    animation: shazam-pulse 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes shazam-pulse {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+.mic-icon {
+    width: 48px;
+    height: 48px;
+    color: var(--fg-dim);
+    transition: color 0.2s ease;
+}
+
+.shazam-ring:hover .mic-icon,
+.shazam-ring.recording .mic-icon {
+    color: var(--accent);
+}
+
+.identify-label {
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.identify-sublabel {
+    font-size: 0.75rem;
+    color: var(--fg-dim);
+}
+
+/* Identify Results */
+.identify-results {
+    width: 100%;
+}
+
+.match-found {
+    border: 1px solid var(--accent);
+    padding: 3rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.match-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    color: var(--fg-dim);
+}
+
+.match-title {
+    font-size: 2.5rem;
+    font-weight: 300;
+    margin: 1.5rem 0 2.5rem;
+    color: var(--accent);
+    line-height: 1.1;
+}
+
+.match-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem 3rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.5rem;
+}
+
+.match-stat {
+    text-align: left;
+    position: relative;
+    cursor: help;
+}
+
+.match-stat[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    padding: 0.6rem 0.8rem;
+    font-size: 0.65rem;
+    line-height: 1.5;
+    width: 260px;
+    white-space: normal;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.no-match {
+    text-align: center;
+    padding: 4rem 2rem;
+    border: 1px solid var(--border);
+}
+
+.no-match p {
+    color: var(--fg-dim);
+    margin: 1.5rem 0 2rem;
+    font-size: 0.85rem;
+}
+
 /* Loader */
 
 .loader-container {
@@ -515,4 +708,124 @@ h1 {
         flex-direction: column;
         gap: 0.2rem;
     }
+}
+
+/* Library Section */
+.library-section {
+    padding: 1rem 0;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    transition: border-color 0.2s ease;
+}
+
+.stat-card:hover {
+    border-color: var(--fg-dim);
+}
+
+.stat-card .stat-value {
+    font-size: 1.8rem;
+    color: var(--accent);
+    font-weight: 300;
+}
+
+.stat-card .stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--fg-dim);
+}
+
+.library-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.library-header-row h3 {
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 300;
+}
+
+.search-wrap input {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 0.6rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    width: 300px;
+}
+
+.search-wrap input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.library-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+}
+
+.library-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+}
+
+.library-table th {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+    border-bottom: 1px solid var(--border);
+}
+
+.library-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--fg);
+}
+
+.library-table tr:last-child td {
+    border-bottom: none;
+}
+
+.library-table tbody tr {
+    cursor: pointer;
+    transition: background 0.1s ease;
+}
+
+.library-table tbody tr:hover td {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.library-table .song-path {
+    font-size: 0.7rem;
+    color: var(--fg-dim);
+    display: block;
+    margin-top: 0.2rem;
 }
