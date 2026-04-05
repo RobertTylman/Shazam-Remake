@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shazam Algorithm Core</title>
-    <!-- Google Fonts for premium typography -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=4.0">
 </head>
 <body>
     
@@ -16,15 +15,6 @@
     <main class="container">
         <header>
             <div class="logo">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="url(#paint0_linear)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    <defs>
-                        <linearGradient id="paint0_linear" x1="12" y1="2" x2="12" y2="22" gradientUnits="userSpaceOnUse">
-                            <stop stop-color="#2D9CDB" />
-                            <stop offset="1" stop-color="#56CCF2" />
-                        </linearGradient>
-                    </defs>
-                </svg>
                 <h1>Acoustic Fingerprinting</h1>
             </div>
             <p class="subtitle">Upload an audio file to generate its Constellation Map and Spectral Hash.</p>
@@ -64,6 +54,10 @@
                     <span class="stat-value" id="stat-peaks">--</span>
                 </div>
                 <div class="stat-box">
+                    <span class="stat-label">Hashes</span>
+                    <span class="stat-value" id="stat-hashes">--</span>
+                </div>
+                <div class="stat-box">
                     <span class="stat-label">Frames</span>
                     <span class="stat-value" id="stat-frames">--</span>
                 </div>
@@ -88,6 +82,34 @@
             <div class="glass-card result-card">
                 <img id="result-image" src="" alt="Spectrogram Constellation Map">
             </div>
+
+            <div class="glass-card interactive-card">
+                <h3>Hash Locator</h3>
+                <p class="interactive-subtitle">Click any hash below to highlight its anchor-target pair on the spectrogram.</p>
+                <div class="spectrogram-interactive-wrap" id="spectrogram-wrap">
+                    <div class="spectrogram-labeled">
+                        <div class="freq-axis" id="freq-axis"></div>
+                        <div class="spectrogram-body">
+                            <div class="spectrogram-inner" id="spectrogram-inner">
+                                <img id="interactive-spectrogram" src="" alt="Interactive Spectrogram">
+                                <svg id="hash-overlay" class="hash-overlay">
+                                    <line id="hash-line" x1="0" y1="0" x2="0" y2="0"></line>
+                                    <circle id="hash-anchor" cx="0" cy="0" r="6"></circle>
+                                    <circle id="hash-target" cx="0" cy="0" r="6"></circle>
+                                </svg>
+                            </div>
+                            <div class="time-axis" id="time-axis"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="selected-hash-details" class="selected-hash-details">Select a hash to locate it on the spectrogram.</div>
+            </div>
+
+            <div class="glass-card hash-list-card">
+                <h3>All Hashes</h3>
+                <div id="hash-list" class="hash-list"></div>
+            </div>
+
             <button class="btn-reset" id="reset-btn">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
                 Process Another Track
@@ -95,6 +117,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=1.1"></script>
+    <script src="/static/app.js?v=4.0"></script>
 </body>
 </html>

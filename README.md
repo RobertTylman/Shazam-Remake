@@ -70,24 +70,41 @@ The core of the algorithm is based on creating robust identifiers for audio clip
 - **Fast Lookups:** Efficient multi-hash matching utilizing offset-based time alignment heuristics.
 
 ## Usage
+There are two ways to run the project: web app (localhost) or command line.
 
-You can test the core audioprocessing pipeline and the peak constellation generator via the command line. The script will ingest an audio file, generate a targeted spectrogram, extract the constellation peaks, and save a combined visual plot to `/tmp/spectrogram_test.png`.
+### 1) Install dependencies
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
+```bash
+python3 -m pip install -r requirements.txt
+```
 
-2. **Run against an audio file:**
-   ```bash
-   # Make sure to include a space between the script and your file path!
-   export PYTHONPATH=$PYTHONPATH:.
-   python3 src/audioprocessing.py "/path/to/your/audio_file.wav"
-   ```
-   *Note: The script natively accepts `.wav` files. If you provide an `.m4a` file or other format, the script will automatically use `ffmpeg` computationally to bridge ingestion.*
+### 2) Run the web app on localhost
 
-3. **Run the built-in dummy test:**
-   If no arguments are provided, the script generates its own dummy file simulating a 400Hz and 800Hz sine sweep to verify standalone functionality:
-   ```bash
-   python3 src/audioprocessing.py
-   ```
+```bash
+python3 app.py
+```
+
+Open: `http://127.0.0.1:8000`
+
+The web UI lets you upload an audio file and returns:
+- Full-track spectrogram
+- Constellation peak map
+- Waveform view
+- Summary stats (duration, peak count, frame/hop size)
+
+### 3) Run the CLI pipeline directly (optional)
+
+Run against a file:
+
+```bash
+export PYTHONPATH=$PYTHONPATH:.
+python3 src/audioprocessing.py "/path/to/your/audio_file.wav"
+```
+
+If no arguments are provided, a built-in dummy signal test is generated:
+
+```bash
+python3 src/audioprocessing.py
+```
+
+The CLI output plot is written to: `/tmp/spectrogram_test.png`

@@ -13,7 +13,7 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 from src.audioprocessing import load_audio, process_audio_pipeline
-from src.fingerprinting import extract_peaks
+from src.fingerprinting import extract_peaks, hashingAlgorithm
 
 # Force Matplotlib to not try and pop up X11 windows in threaded environment
 import matplotlib
@@ -69,6 +69,15 @@ async def process_audio(file: UploadFile = File(...)):
 
         # Log scale mapping
         spec_db = 10 * np.log10(spec + 1e-10)
+
+        # Build anchor-target hashes with metadata for the interactive UI
+        hash_records = hashingAlgorithm(
+            peaks,
+            target_zone_time=50,
+            target_zone_freq=80,
+            max_targets_per_anchor=5,
+            include_metadata=True
+        )
         
         # Object-Oriented Matplotlib plotting (thread-safe for FastAPI)
         # Using a massive 24x12 footprint for immense clarity
@@ -107,12 +116,55 @@ async def process_audio(file: UploadFile = File(...)):
         
         # Base64 encode the final raw image stream
         img_b64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+
+        # Build a clean spectrogram-only image for exact browser overlays
+        spec_db_flipped = np.flipud(spec_db)
+        spec_min = np.min(spec_db_flipped)
+        spec_max = np.max(spec_db_flipped)
+        spec_norm = (spec_db_flipped - spec_min) / (spec_max - spec_min + 1e-10)
+        rgba = (plt.get_cmap("viridis")(spec_norm) * 255).astype(np.uint8)
+
+        spec_buf = io.BytesIO()
+        plt.imsave(spec_buf, rgba)
+        spec_buf.seek(0)
+        spec_img_b64 = base64.b64encode(spec_buf.getvalue()).decode("utf-8")
+
+        # Convert hash metadata into JSON-friendly values with physical units
+        time_per_frame = step_size / sr
+        hz_per_bin = sr / frame_size
+        hashes_for_ui = []
+        for idx, row in enumerate(hash_records):
+            anchor_time = int(row["anchor_time"])
+            anchor_freq = int(row["anchor_freq"])
+            target_time = int(row["target_time"])
+            target_freq = int(row["target_freq"])
+            delta_time = int(row["delta_time"])
+            hash_val = int(row["hash"])
+
+            hashes_for_ui.append({
+                "id": idx,
+                "hash_int": hash_val,
+                "hash_hex": f"0x{hash_val:08x}",
+                "anchor_time_frame": anchor_time,
+                "anchor_freq_bin": anchor_freq,
+                "target_time_frame": target_time,
+                "target_freq_bin": target_freq,
+                "delta_time_frames": delta_time,
+                "anchor_time_s": float(anchor_time * time_per_frame),
+                "target_time_s": float(target_time * time_per_frame),
+                "anchor_freq_hz": float(anchor_freq * hz_per_bin),
+                "target_freq_hz": float(target_freq * hz_per_bin)
+            })
         
         return JSONResponse(content={
             "image": f"data:image/png;base64,{img_b64}",
+            "spectrogram_image": f"data:image/png;base64,{spec_img_b64}",
             "duration": float(max_plot_seconds),
             "peaks": len(peaks),
+            "hashes": hashes_for_ui,
+            "num_hashes": len(hashes_for_ui),
             "num_frames": int(spec.shape[1]),
+            "num_freq_bins": int(spec.shape[0]),
             "frame_size": int(frame_size),
             "hop_size": int(step_size),
             "lowest_hz": 0,
