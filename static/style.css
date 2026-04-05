@@ -4,7 +4,21 @@
     --fg-dim: #777777;
     --border: #333333;
     --accent: #ffffff;
+    --surface: rgba(255, 255, 255, 0.03);
+    --surface-hover: rgba(255, 255, 255, 0.05);
+    --surface-active: rgba(255, 255, 255, 0.12);
     --mono: 'IBM Plex Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+html[data-theme='light'] {
+    --bg: #f5f7fa;
+    --fg: #1e232b;
+    --fg-dim: #5e6978;
+    --border: #c9d1db;
+    --accent: #0b0f14;
+    --surface: rgba(16, 24, 40, 0.03);
+    --surface-hover: rgba(16, 24, 40, 0.06);
+    --surface-active: rgba(16, 24, 40, 0.12);
 }
 
 * {
@@ -22,10 +36,34 @@ body {
     justify-content: center;
     overflow-x: hidden;
     padding-top: 4rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .bg-gradient {
     display: none;
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 50;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0.5rem 0.7rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
 }
 
 .container {
@@ -94,7 +132,7 @@ h1 {
 .drop-zone:hover,
 .drop-zone.dragover {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface);
     transform: none;
     box-shadow: none;
 }
@@ -201,12 +239,12 @@ h1 {
 
 .shazam-ring:hover {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface);
 }
 
 .shazam-ring.recording {
     border-color: var(--accent);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-hover);
 }
 
 .pulse-ring-static {
@@ -416,7 +454,7 @@ h1 {
 }
 
 .stat-box:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface);
     transform: none;
 }
 
@@ -626,11 +664,11 @@ h1 {
 }
 
 .hash-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--surface-hover);
 }
 
 .hash-item.active {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--surface-active);
     color: var(--accent);
 }
 
@@ -723,7 +761,7 @@ h1 {
 }
 
 .stat-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface);
     border: 1px solid var(--border);
     padding: 1.5rem;
     display: flex;

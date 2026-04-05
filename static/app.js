@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const themeToggle = document.getElementById('theme-toggle');
     const dropZone = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
     const loaderContainer = document.getElementById('loader-container');
@@ -39,7 +40,17 @@ document.addEventListener('DOMContentLoaded', () => {
     let mediaRecorder = null;
     let audioChunks = [];
     let isRecording = false;
-    let currentMode = 'analyze'; // 'analyze', 'identify', or 'library'
+    let currentMode = 'identify'; // 'analyze', 'identify', or 'library'
+    const THEME_STORAGE_KEY = 'shazam-theme';
+
+    initTheme();
+
+    themeToggle.addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme') || 'dark';
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem(THEME_STORAGE_KEY, next);
+    });
 
     // --- Event Listeners for Drag and Drop ---
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -50,6 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
+    }
+
+    function initTheme() {
+        const saved = localStorage.getItem(THEME_STORAGE_KEY);
+        const initial = saved || 'dark';
+        applyTheme(initial);
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        themeToggle.textContent = theme === 'light' ? 'Dark mode' : 'Light mode';
     }
 
     // Highlight drop zone

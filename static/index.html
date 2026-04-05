@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shazam Algorithm Core</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=13.0">
+    <link rel="stylesheet" href="/static/style.css?v=13.2">
 </head>
 <body>
+    <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
+        Light mode
+    </button>
     
     <!-- Dynamic background gradients -->
     <div class="bg-gradient"></div>
@@ -21,12 +24,12 @@
         </header>
 
         <nav class="mode-selector">
-            <button class="mode-btn active" id="mode-analyze">Analyze Track</button>
-            <button class="mode-btn" id="mode-identify">Identify Library</button>
-            <button class="mode-btn" id="mode-library">Browse Library</button>
+            <button class="mode-btn active" id="mode-identify">Identify Song</button>
+            <button class="mode-btn" id="mode-analyze">Analyze Song</button>
+            <button class="mode-btn" id="mode-library">Database</button>
         </nav>
 
-        <section class="upload-section" id="analyze-section">
+        <section class="upload-section hidden" id="analyze-section">
             <div class="drop-zone" id="drop-zone">
                 <div class="drop-zone-content">
                     <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -39,7 +42,7 @@
             </div>
         </section>
 
-        <section class="identify-section hidden" id="identify-section">
+        <section class="identify-section" id="identify-section">
             <div class="identify-container">
                 <div class="shazam-ring" id="record-btn">
                     <div class="pulse-ring-static" id="pulse-ring"></div>
@@ -221,6 +224,6 @@
         </section>
     </main>
 
-    <script src="/static/app.js?v=13.0"></script>
+    <script src="/static/app.js?v=13.2"></script>
 </body>
 </html>
