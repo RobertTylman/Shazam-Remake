@@ -35,6 +35,14 @@ flowchart TD
     RecordFP -- Ask for the music<br>associated with<br>the fingerprint ---> Frontal
 ```
 
+## Features
+- **Acoustic Fingerprinting:** Fast and scalable audio hashing mechanisms.
+- **Audio Identification:** Real-time matching using time-coherence scoring across millions of fingerprints.
+- **Microphone Support:** Shazam-style "Listen" mode with real-time volume visualization.
+- **Large Dataset Support:** Optimized SQLite storage designed to handle massive libraries with high-speed B-Tree indexing.
+- **Visual Diagnostics:** Full spectrograms and constellation peak overlays for every analyzed track.
+- **Library Browser:** Browse your entire indexed collection and view real-time database statistics.
+
 ## How It Works
 
 The core of the algorithm is based on creating robust identifiers for audio clips that can survive noise, distortion, and compression.
@@ -116,14 +124,6 @@ The following details reflect the current code defaults in this repository.
 
    Example intuition:
    If the snippet begins about 200 frames later than the song's reference timeline, many correct matches cluster around `diff ~= 200`. That concentrated cluster is the match signal.
-
-## Features
-- **Acoustic Fingerprinting:** Fast and scalable audio hashing mechanisms.
-- **Audio Identification:** Real-time matching using time-coherence scoring across millions of fingerprints.
-- **Microphone Support:** Shazam-style "Listen" mode with real-time volume visualization.
-- **Large Dataset Support:** Optimized SQLite storage designed to handle massive libraries with high-speed B-Tree indexing.
-- **Visual Diagnostics:** Full spectrograms and constellation peak overlays for every analyzed track.
-- **Library Browser:** Browse your entire indexed collection and view real-time database statistics.
 
 ## Usage
 ### 1) Install dependencies
