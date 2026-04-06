@@ -87,6 +87,8 @@ def identify_audio(filepath: str, db_path: str = "fingerprints.db") -> Optional[
         
     # Must match the coefficient used during indexing (1.0) to produce the same hashes.
     peaks = extract_peaks(spec, coefficient=1.0)
+
+    #get fingerprints from snippet audio
     snippet_fingerprints = hashingAlgorithm(peaks, include_metadata=False)
     
     if not snippet_fingerprints:
