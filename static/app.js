@@ -7,11 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultImage = document.getElementById('result-image');
     const interactiveSpectrogram = document.getElementById('interactive-spectrogram');
     const spectrogramWrap = document.getElementById('spectrogram-wrap');
+    const hashOverlay = document.getElementById('hash-overlay');
     const hashList = document.getElementById('hash-list');
     const selectedHashDetails = document.getElementById('selected-hash-details');
-    const hashLine = document.getElementById('hash-line');
-    const hashAnchor = document.getElementById('hash-anchor');
-    const hashTarget = document.getElementById('hash-target');
     const resetBtn = document.getElementById('reset-btn');
     const modeAnalyze = document.getElementById('mode-analyze');
     const modeIdentify = document.getElementById('mode-identify');
@@ -33,9 +31,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const libStatSongs = document.getElementById('lib-stat-songs');
     const libStatHashes = document.getElementById('lib-stat-hashes');
     const libStatSize = document.getElementById('lib-stat-size');
-    const fullscreenModal = document.getElementById('fullscreen-modal');
-    const modalImg = document.getElementById('modal-img');
-    const modalClose = document.getElementById('modal-close');
 
     let libraryData = [];
     let lastHashes = [];
@@ -97,7 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateFullscreenState() {
         const isFullscreen = getFullscreenElement() === spectrogramWrap;
         spectrogramWrap.classList.toggle('is-fullscreen', isFullscreen);
-        refreshSpectrogramLayout();
+        if (isFullscreen || selectedHashId !== null) {
+            refreshSpectrogramLayout();
+        }
     }
 
     async function toggleSpectrogramFullscreen() {
@@ -111,8 +108,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Fullscreen toggle failed:', error);
-        } finally {
-            updateFullscreenState();
         }
     }
 
@@ -127,8 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Result image fullscreen toggle failed:', error);
-        } finally {
-            updateFullscreenState();
         }
     }
 
@@ -188,6 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
         identifyResults.classList.add('hidden');
         noMatchView.classList.add('hidden');
         recordBtn.parentElement.classList.remove('hidden');
+        recordStatus.textContent = 'Tap to Identify';
     });
 
     modeLibrary.addEventListener('click', () => {
@@ -341,6 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error('Recording Error:', err);
             alert('Cannot access microphone. Please check permissions.');
+            recordStatus.textContent = 'Tap to Identify';
         }
     }
 
@@ -506,6 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 noMatchView.classList.remove('hidden');
             }
+            recordStatus.textContent = 'Tap to Identify';
 
         } catch (error) {
             console.error('Identify Error:', error);
@@ -567,12 +563,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function syncOverlaySize() {
         const img = interactiveSpectrogram;
-        const svg = document.getElementById('hash-overlay');
         const w = img.clientWidth;
         const h = img.clientHeight;
-        svg.setAttribute('width', w);
-        svg.setAttribute('height', h);
-        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        hashOverlay.setAttribute('width', w);
+        hashOverlay.setAttribute('height', h);
+        hashOverlay.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    }
+
+    function getAnchorGroup(hashRow) {
+        return lastHashes
+            .filter(row =>
+                row.anchor_time_frame === hashRow.anchor_time_frame &&
+                row.anchor_freq_bin === hashRow.anchor_freq_bin
+            )
+            .sort((a, b) => a.id - b.id)
+            .slice(0, 5);
     }
 
     function drawHashOverlay(hashRow, numFrames, numFreqBins) {
@@ -580,34 +585,48 @@ document.addEventListener('DOMContentLoaded', () => {
         const img = interactiveSpectrogram;
         const w = img.clientWidth;
         const h = img.clientHeight;
+        const svgNS = 'http://www.w3.org/2000/svg';
+
+        clearHashOverlay();
 
         const x1 = normalizeX(hashRow.anchor_time_frame, numFrames, w);
         const y1 = normalizeY(hashRow.anchor_freq_bin, numFreqBins, h);
-        const x2 = normalizeX(hashRow.target_time_frame, numFrames, w);
-        const y2 = normalizeY(hashRow.target_freq_bin, numFreqBins, h);
+        const relatedPairs = getAnchorGroup(hashRow);
 
-        hashLine.setAttribute('x1', x1);
-        hashLine.setAttribute('y1', y1);
-        hashLine.setAttribute('x2', x2);
-        hashLine.setAttribute('y2', y2);
-        hashAnchor.setAttribute('cx', x1);
-        hashAnchor.setAttribute('cy', y1);
-        hashTarget.setAttribute('cx', x2);
-        hashTarget.setAttribute('cy', y2);
+        relatedPairs.forEach(pair => {
+            const x2 = normalizeX(pair.target_time_frame, numFrames, w);
+            const y2 = normalizeY(pair.target_freq_bin, numFreqBins, h);
+            const isSelected = pair.id === hashRow.id;
+
+            const line = document.createElementNS(svgNS, 'line');
+            line.setAttribute('x1', x1);
+            line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2);
+            line.setAttribute('y2', y2);
+            line.setAttribute('class', `hash-line-item${isSelected ? ' is-selected' : ''}`);
+            hashOverlay.appendChild(line);
+
+            const target = document.createElementNS(svgNS, 'circle');
+            target.setAttribute('cx', x2);
+            target.setAttribute('cy', y2);
+            target.setAttribute('r', isSelected ? '3' : '2');
+            target.setAttribute('class', `hash-target-item${isSelected ? ' is-selected' : ''}`);
+            hashOverlay.appendChild(target);
+        });
+
+        const anchor = document.createElementNS(svgNS, 'circle');
+        anchor.setAttribute('cx', x1);
+        anchor.setAttribute('cy', y1);
+        anchor.setAttribute('r', '3.5');
+        anchor.setAttribute('class', 'hash-anchor-item');
+        hashOverlay.appendChild(anchor);
 
         selectedHashDetails.textContent =
-            `${hashRow.hash_hex} | anchor ${hashRow.anchor_time_s.toFixed(3)}s @ ${hashRow.anchor_freq_hz.toFixed(1)}Hz -> target ${hashRow.target_time_s.toFixed(3)}s @ ${hashRow.target_freq_hz.toFixed(1)}Hz (Δt=${hashRow.delta_time_frames} frames)`;
+            `${hashRow.hash_hex} | anchor ${hashRow.anchor_time_s.toFixed(3)}s @ ${hashRow.anchor_freq_hz.toFixed(1)}Hz -> target ${hashRow.target_time_s.toFixed(3)}s @ ${hashRow.target_freq_hz.toFixed(1)}Hz (Δt=${hashRow.delta_time_frames} frames) | showing ${relatedPairs.length} pair(s) for this source anchor`;
     }
 
     function clearHashOverlay() {
-        hashLine.setAttribute('x1', 0);
-        hashLine.setAttribute('y1', 0);
-        hashLine.setAttribute('x2', 0);
-        hashLine.setAttribute('y2', 0);
-        hashAnchor.setAttribute('cx', 0);
-        hashAnchor.setAttribute('cy', 0);
-        hashTarget.setAttribute('cx', 0);
-        hashTarget.setAttribute('cy', 0);
+        hashOverlay.innerHTML = '';
     }
 
     function normalizeX(frameIdx, numFrames, width) {
@@ -675,12 +694,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     resultImage.classList.add('can-fullscreen');
     resultImage.addEventListener('click', () => {
-        toggleResultImageFullscreen();
+        if (getFullscreenElement() !== resultImage) {
+            toggleResultImageFullscreen();
+        }
     });
 
     spectrogramWrap.classList.add('can-fullscreen');
     interactiveSpectrogram.addEventListener('click', () => {
-        toggleSpectrogramFullscreen();
+        if (getFullscreenElement() !== spectrogramWrap) {
+            toggleSpectrogramFullscreen();
+        }
     });
     document.addEventListener('fullscreenchange', updateFullscreenState);
     document.addEventListener('webkitfullscreenchange', updateFullscreenState);
@@ -846,35 +869,5 @@ document.addEventListener('DOMContentLoaded', () => {
             s.path.toLowerCase().includes(term)
         );
         renderLibrary(filtered);
-    });
-
-    // --- Fullscreen Modal Logic ---
-    resultImage.addEventListener('click', () => {
-        if (resultImage.src && resultImage.src !== window.location.href) {
-            modalImg.src = resultImage.src;
-            fullscreenModal.classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; // Prevent scrolling
-        }
-    });
-
-    const closeModal = () => {
-        fullscreenModal.classList.add('hidden');
-        document.body.style.overflow = ''; // Restore scrolling
-    };
-
-    modalClose.addEventListener('click', closeModal);
-    
-    // Close on background click
-    fullscreenModal.addEventListener('click', (e) => {
-        if (e.target === fullscreenModal || e.target.classList.contains('modal-zoom-container')) {
-            closeModal();
-        }
-    });
-
-    // Close on Escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !fullscreenModal.classList.contains('hidden')) {
-            closeModal();
-        }
     });
 });

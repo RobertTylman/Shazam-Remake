@@ -11,6 +11,60 @@ from src.audioprocessing import process_audio_pipeline
 from src.fingerprinting import extract_peaks
 from src.hashing import hashingAlgorithm
 
+def _load_dotenv() -> None:
+    """Load key=value pairs from project-root .env into os.environ (non-destructive)."""
+    root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    env_path = os.path.join(root_dir, ".env")
+    if not os.path.exists(env_path):
+        return
+
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("export "):
+                    line = line[len("export "):].strip()
+                if "=" not in line:
+                    continue
+
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip()
+                if not key:
+                    continue
+
+                # Strip simple surrounding quotes.
+                if len(value) >= 2 and ((value[0] == value[-1]) and value[0] in ("'", '"')):
+                    value = value[1:-1]
+
+                # Do not overwrite already-exported process env vars.
+                os.environ.setdefault(key, value)
+    except OSError:
+        # If .env cannot be read, continue with defaults/process env.
+        return
+
+_load_dotenv()
+
+def _env_float(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        return default
+
+def _env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
 def identify_audio(filepath: str, db_path: str = "fingerprints.db") -> Optional[Dict]:
     """
     Given a snippet, identify it from the database.
@@ -86,9 +140,43 @@ def identify_audio(filepath: str, db_path: str = "fingerprints.db") -> Optional[
     # Dominance: how much the best match stands out vs the runner-up
     # A ratio > 2 is a strong identification
     dominance = best_score / second_score if second_score > 0 else float('inf')
+    score_gap = best_score - second_score
+
+    # Coherence concentration inside the winning song:
+    # how much the best single offset bucket dominates that song's total hash hits.
+    coherence_ratio = (best_score / best_total) if best_total > 0 else 0.0
 
     # Total hash hits across all songs for the query hashes
     total_db_hits = len(db_matches)
+
+    # Conservative defaults to reduce false positives ("always returns something").
+    # Override with env vars for tuning without code changes:
+    # - ID_MIN_QUERY_FPS
+    # - ID_MIN_SCORE
+    # - ID_MIN_MATCH_DENSITY
+    # - ID_MIN_DOMINANCE
+    # - ID_MIN_COHERENCE_RATIO
+    # - ID_MIN_SCORE_GAP
+    min_query_fps = _env_int("ID_MIN_QUERY_FPS", 25)
+    min_score = _env_int("ID_MIN_SCORE", 12)
+    min_match_density = _env_float("ID_MIN_MATCH_DENSITY", 8.0)
+    min_dominance = _env_float("ID_MIN_DOMINANCE", 1.8)
+    min_coherence_ratio = _env_float("ID_MIN_COHERENCE_RATIO", 0.18)
+    min_score_gap = _env_int("ID_MIN_SCORE_GAP", 4)
+
+    # Reject weak/ambiguous matches.
+    if len(snippet_fingerprints) < min_query_fps:
+        return None
+    if best_score < min_score:
+        return None
+    if match_density < min_match_density:
+        return None
+    if dominance != float('inf') and dominance < min_dominance:
+        return None
+    if coherence_ratio < min_coherence_ratio:
+        return None
+    if second_score > 0 and score_gap < min_score_gap:
+        return None
 
     time_per_frame = 512 / 11025
 
@@ -106,6 +194,7 @@ def identify_audio(filepath: str, db_path: str = "fingerprints.db") -> Optional[
         "db_hits": total_db_hits,
         "songs_matched": len(ranked),
         "second_score": second_score,
+        "coherence_ratio": round(coherence_ratio, 4),
         "offset_s": round(best_offset * time_per_frame, 2)
     }
 

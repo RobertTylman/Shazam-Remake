@@ -67,6 +67,56 @@ The core of the algorithm is based on creating robust identifiers for audio clip
 6. **Matching & Retrieval (Time Coherence Scoring):**
    These query hashes are sent to the backend, which looks them up in the fingerprint database. The engine performs **Time Coherence Scoring**: it calculates the time-offset between every matched hash in the snippet vs the original track. By finding the most frequent offset (the "mode"), the algorithm can identify the song even if the sample starts halfway through, with high certainty despite background noise.
 
+### Implementation Details (Current Defaults)
+
+The following details reflect the current code defaults in this repository.
+
+1. **Peak selection per frame/band**
+   For every time frame `t`, and for each of the 6 frequency bands, the algorithm picks exactly one local maximum (`np.max` + `np.argmax`) as a candidate peak.
+   - This means: at most **1 candidate per band per frame**
+   - With 6 bands: at most **6 candidates per frame** before thresholding
+   - After thresholding, each candidate can be removed, so final peaks can be fewer
+
+2. **Frame duration and hop duration**
+   The pipeline currently uses:
+   - `sample_rate = 11025 Hz`
+   - `frame_size = 1024`
+   - `overlap = 50%` (hop size = `512`)
+
+   Therefore:
+   - FFT window duration = `1024 / 11025 ~= 0.0929 s` (**92.9 ms**)
+   - Frame-to-frame hop = `512 / 11025 ~= 0.0464 s` (**46.4 ms**)
+
+   So in this implementation, a "time frame step" is ~46.4 ms (not 25 ms).
+
+3. **Target zone constraints used during hashing**
+   During anchor-target pairing, defaults are:
+   - `target_zone_time = 50` frames (horizontal/time limit)
+   - `target_zone_freq = 80` bins (vertical/frequency limit)
+   - `max_targets_per_anchor = 5`
+
+   Interpreting these limits:
+   - Max time separation: `50 * 46.4 ms ~= 2.32 s`
+   - Frequency resolution: `11025 / 1024 ~= 10.77 Hz/bin`
+   - Max frequency-bin separation: `80 * 10.77 ~= 861 Hz` (approx.)
+
+4. **Time-coherence voting (detailed)**
+   After generating snippet hashes, each snippet hash is looked up in the DB.
+   For every hash match:
+   - DB provides `(song_id, db_offset, hash)`
+   - Snippet has one or more `snippet_offset` values for that same hash
+   - Compute `diff = db_offset - snippet_offset`
+   - Increment vote count for `(song_id, diff)`
+
+   Why this works:
+   - For the correct song, many matched hashes preserve the same relative shift in time, so they produce nearly the same `diff`.
+   - Those votes accumulate in one dominant `(song_id, diff)` bucket.
+   - Incorrect songs produce scattered diffs and weaker buckets.
+   - Final ranking uses each song's strongest diff bucket; top score wins.
+
+   Example intuition:
+   If the snippet begins about 200 frames later than the song's reference timeline, many correct matches cluster around `diff ~= 200`. That concentrated cluster is the match signal.
+
 ## Features
 - **Acoustic Fingerprinting:** Fast and scalable audio hashing mechanisms.
 - **Audio Identification:** Real-time matching using time-coherence scoring across millions of fingerprints.
@@ -88,13 +138,65 @@ python3 app.py
 
 Open: `http://127.0.0.1:8000`
 
+### Optional: tune identification thresholds with `.env`
+```bash
+cp .env.example .env
+```
+
+Edit `.env` values to control how strict "match vs no match" behavior is, then restart the app.
+
 ### 3) Navigation Modes
 The web UI provides three distinct modes:
 *   **Analyze (Default):** Upload full-length tracks to generate and visualize fingerprints.
 *   **Identify:** Identify a song by recording a 10-second snippet (Microphone) or uploading a short audio file.
 *   **Library:** Browse your indexed collection, search by track name, and view database stats (Total Songs, Hashes, and DB size).
 
-### 3) Run the CLI pipeline directly (optional)
+### 4) Add Songs To The Fingerprint Database
+
+#### Add a single song
+Use this when you want to index one specific file without scanning an entire folder.
+
+```bash
+python3 - <<'PY'
+import os
+from src.database import Database
+from src.audioprocessing import process_audio_pipeline, load_audio
+from src.fingerprinting import extract_peaks
+from src.hashing import hashingAlgorithm
+
+filepath = "/absolute/path/to/song.mp3"
+db = Database("fingerprints.db")
+
+if db.is_song_indexed(filepath):
+    print("Already indexed:", filepath)
+else:
+    frame_size = 1024
+    spec, _ = process_audio_pipeline(filepath, frame_size=frame_size)
+    peaks = extract_peaks(spec, coefficient=1.0)
+    fingerprints = hashingAlgorithm(
+        peaks,
+        target_zone_time=50,
+        target_zone_freq=80,
+        max_targets_per_anchor=5,
+        include_metadata=False
+    )
+    sr, audio_data = load_audio(filepath)
+    duration = len(audio_data) / sr
+    song_id = db.add_song(os.path.basename(filepath), filepath, duration)
+    db.add_fingerprints(song_id, fingerprints)
+    print(f"Indexed song_id={song_id}, peaks={len(peaks)}, fingerprints={len(fingerprints)}")
+PY
+```
+
+#### Add an entire folder
+```bash
+python3 - <<'PY'
+from src.index_directory import index_folder
+index_folder("/absolute/path/to/your/music/folder", db_path="fingerprints.db")
+PY
+```
+
+### 5) Run the CLI pipeline directly (optional)
 
 Run against a file:
 

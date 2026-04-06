@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shazam Algorithm Core</title>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=13.2">
+    <link rel="stylesheet" href="/static/style.css?v=13.4">
 </head>
 <body>
     <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">
@@ -61,27 +61,27 @@
                     <span class="match-label">Match Found</span>
                     <h2 class="match-title" id="match-song-name">--</h2>
                     <div class="match-stats">
-                        <div class="match-stat" title="Time-coherent hash matches: fingerprints where the time offset difference aligns consistently, proving the audio plays at the same position in the song.">
+                        <div class="match-stat" data-tooltip="Time-coherent hash matches: fingerprints where the time offset difference aligns consistently, proving the audio plays at the same position in the song.">
                             <span class="stat-label">Score</span>
                             <span class="stat-value" id="match-score">--</span>
                         </div>
-                        <div class="match-stat" title="Match density: percentage of query fingerprints that are time-coherent with the best match. Higher = cleaner recording. Formula: (score / query_fingerprints) * 100">
+                        <div class="match-stat" data-tooltip="Match density: percentage of query fingerprints that are time-coherent with the best match. Higher = cleaner recording. Formula: (score / query_fingerprints) * 100">
                             <span class="stat-label">Density</span>
                             <span class="stat-value" id="match-confidence">--</span>
                         </div>
-                        <div class="match-stat" title="Dominance ratio: best score divided by the second-best score. Values above 2.0 indicate a strong, unambiguous match. Higher = more certain.">
+                        <div class="match-stat" data-tooltip="Dominance ratio: best score divided by the second-best score. Values above 2.0 indicate a strong, unambiguous match. Higher = more certain.">
                             <span class="stat-label">Dominance</span>
                             <span class="stat-value" id="match-dominance">--</span>
                         </div>
-                        <div class="match-stat" title="Estimated position in the original track where the recording starts. Calculated from the most common time offset difference between DB and query fingerprints.">
+                        <div class="match-stat" data-tooltip="Estimated position in the original track where the recording starts. Calculated from the most common time offset difference between DB and query fingerprints.">
                             <span class="stat-label">Offset</span>
                             <span class="stat-value" id="match-offset">--</span>
                         </div>
-                        <div class="match-stat" title="Total fingerprints generated from the recorded audio snippet. Each anchor peak is paired with up to 5 nearby target peaks to produce hash values.">
-                            <span class="stat-label">Query FPs</span>
+                        <div class="match-stat" data-tooltip="Total fingerprints generated from the recorded audio snippet. Each anchor peak is paired with up to 5 nearby target peaks to produce hash values.">
+                            <span class="stat-label">Query Fingerprints</span>
                             <span class="stat-value" id="match-query-fps">--</span>
                         </div>
-                        <div class="match-stat" title="Total database hash hits across all songs. The query hashes are looked up in the fingerprint database; this is how many rows matched before time-coherence filtering.">
+                        <div class="match-stat" data-tooltip="Total database hash hits across all songs. The query hashes are looked up in the fingerprint database; this is how many rows matched before time-coherence filtering.">
                             <span class="stat-label">DB Hits</span>
                             <span class="stat-value" id="match-db-hits">--</span>
                         </div>
@@ -191,18 +191,14 @@
 
             <div class="glass-card interactive-card">
                 <h3>Hash Locator</h3>
-                <p class="interactive-subtitle">Click any hash below to highlight its anchor-target pair on the spectrogram.</p>
+                <p class="interactive-subtitle">Click any hash below to highlight all target pairs for its source anchor (up to 5).</p>
                 <div class="spectrogram-interactive-wrap" id="spectrogram-wrap">
                     <div class="spectrogram-labeled">
                         <div class="freq-axis" id="freq-axis"></div>
                         <div class="spectrogram-body">
                             <div class="spectrogram-inner" id="spectrogram-inner">
                                 <img id="interactive-spectrogram" src="" alt="Interactive Spectrogram">
-                                <svg id="hash-overlay" class="hash-overlay">
-                                    <line id="hash-line" x1="0" y1="0" x2="0" y2="0"></line>
-                                    <circle id="hash-anchor" cx="0" cy="0" r="6"></circle>
-                                    <circle id="hash-target" cx="0" cy="0" r="6"></circle>
-                                </svg>
+                                <svg id="hash-overlay" class="hash-overlay"></svg>
                             </div>
                             <div class="time-axis" id="time-axis"></div>
                         </div>
@@ -223,13 +219,6 @@
         </section>
     </main>
 
-    <div id="fullscreen-modal" class="modal hidden">
-        <span class="modal-close" id="modal-close">&times;</span>
-        <div class="modal-zoom-container">
-            <img id="modal-img" class="modal-content" src="" alt="Full Spectrogram">
-        </div>
-    </div>
-
-    <script src="/static/app.js?v=13.5"></script>
+    <script src="/static/app.js?v=13.8"></script>
 </body>
 </html>
